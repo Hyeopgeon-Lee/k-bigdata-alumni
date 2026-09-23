@@ -29,7 +29,21 @@
     const first = includeAll ? '<option value="">전체</option>' : '<option value="">선택</option>';
     select.innerHTML = first + Array.from({length: 31}, (_, i) => `<option value="${now + 1 - i}">${now + 1 - i}년</option>`).join('');
   }
+  const options = Object.freeze({
+    employmentStatus: ['취업 중','대학원 준비중','대학원 연구실(석사과정)','대학원 연구실(박사과정)','구직 중','미취업','기타'],
+    bachelorStatus: ['재학','취득','취득 예정','미취득'],
+    graduateStatus: ['진학하지 않음','진학 예정(준비중)','재학','휴학','수료','졸업'],
+    graduateSchoolType: ['일반대학원','전문대학원','특수대학원'],
+    graduateDegree: ['석사','박사','석박사통합']
+  });
+  function selectOptions(select, values, { all = false, selected = '' } = {}) {
+    if (!select) return;
+    const first = all ? '전체' : '선택';
+    select.innerHTML = `<option value="">${first}</option>` + values.map(value => `<option value="${esc(value)}">${esc(value)}</option>`).join('');
+    select.value = selected;
+    if (selected) Array.from(select.options).forEach(option => { option.defaultSelected = option.value === selected; });
+  }
   function params() { return new URLSearchParams(location.search); }
-  window.AlumniUI = { esc, qs, qsa, status, busy, yearOptions, params };
+  window.AlumniUI = { esc, qs, qsa, status, busy, yearOptions, selectOptions, options, params };
   document.addEventListener('DOMContentLoaded', initNav);
 })();
