@@ -1,0 +1,1 @@
+(function(){'use strict';document.addEventListener('DOMContentLoaded',async()=>{const st=AlumniUI.qs('#home-jobs-status'),root=AlumniUI.qs('#home-jobs-list');try{const jobs=(await AlumniAPI.request('jobs')).data.slice(0,3);root.innerHTML=jobs.map(JobUI.card).join('')||'<p class="empty">현재 모집중인 채용정보가 없습니다.</p>';st.hidden=true}catch(e){AlumniUI.status(st,e.message,'error')}})})();

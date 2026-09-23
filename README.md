@@ -103,3 +103,50 @@ CNAME
 - 브라우저 콘솔 오류 없음, HTTPS/Custom Domain 정상
 
 > 실제 개인정보나 운영 PIN, API 응답 덤프를 GitHub 이슈·커밋·README에 추가하지 마세요.
+
+## 선배가 알려준 채용정보
+
+승인된 졸업생은 `job-submit.html`에서 Alumni ID와 수정 PIN으로 본인 확인 후 채용정보를 등록할 수 있습니다. 신규 공고는 `PENDING`으로 저장되고 관리자 승인 전에는 공개되지 않습니다. 승인된 모집중 공고는 홈(최근 3건), `jobs.html`, `job-detail.html`, 등록 졸업생의 상세 프로필에 표시됩니다. 마감일이 지나고 상시채용이 아닌 공고는 `EXPIRED`로 자동 전환됩니다.
+
+추가 파일은 `jobs.html`, `job-detail.html`, `job-submit.html`, `css/jobs.css`와 관련 `js/` 파일입니다. 기존 공개 API와 동일하게 채용정보 API도 이메일, 휴대전화, PIN 해시, 승인 nonce를 반환하지 않습니다. 채용 문의는 `job_id`와 `alumni_id`를 서버에서 함께 검증한 뒤 기존 비공개 연락 전달 구조를 사용합니다.
+
+### 추가되는 Sheets 구조
+
+- `alumni` 끝에 안전하게 추가: `career_mail_enabled, career_mail_consent_at, career_mail_updated_at`
+- `jobs`: `job_id, alumni_id, company, job_title, recruit_type, employment_type, location, job_url, deadline, always_open, skills, alumni_comment, referral_available, contact_allowed, status, approved_at, approved_by, created_at, updated_at, last_mailed_at, approval_nonce_hash, approval_token_expires_at`
+- `alumni_consent_logs`: `log_id, alumni_id, consent_type, previous_value, new_value, changed_at`
+- `job_mail_logs`: `mail_id, job_ids, recipient_count, sent_count, failed_count, sent_at, status`
+- `career_consent_invites`: `invite_id, alumni_id, sent_at, status`
+
+`migrateJobsFeature()` 또는 최신 `setup()`은 시트를 삭제하거나 초기화하지 않습니다. 기존 헤더 순서를 확인한 뒤 누락된 끝 열과 새 시트만 추가합니다. 기존 졸업생의 `career_mail_enabled`는 빈값으로 유지되며 `TRUE`로 자동 변경되지 않습니다.
+
+### 승인 메일과 보안
+
+채용정보 등록 시 `ADMIN_NOTIFICATION_EMAIL`로 모바일용 HTML 승인 메일을 보냅니다. 승인·반려 URL은 `APPROVAL_TOKEN_SECRET`을 이용한 HMAC-SHA256 서명, 7일 만료시간, 공고별 일회용 nonce 해시를 사용합니다. 처리 후 nonce를 비워 재사용과 중복 처리를 막습니다. 비밀값과 원문 nonce는 GitHub에 저장하지 않습니다.
+
+필수 Script Properties:
+
+- `SPREADSHEET_ID`: 운영 Google Sheets ID
+- `GOOGLE_CLIENT_ID`: 관리자 Google OAuth 웹 클라이언트 ID
+- `ADMIN_NOTIFICATION_EMAIL`: 승인 요청 수신 관리자 이메일
+- `SITE_URL`: `https://alumni.k-bigdata.kr` (생략 시 이 주소 사용)
+- `PIN_PEPPER`, `APPROVAL_TOKEN_SECRET`: `setup()`과 최초 사용 시 안전하게 생성; 운영 중 임의 변경 금지
+
+### 일일 채용정보 Digest
+
+`sendDailyJobDigest()`는 아직 발송하지 않은 승인·모집중 공고를 한 통의 HTML Digest로 묶어 `status == APPROVED`, `career_mail_enabled == TRUE`, 유효한 이메일이 있는 졸업생에게만 발송합니다. 공고가 없으면 메일을 보내지 않습니다. 발송 후 `last_mailed_at`과 `job_mail_logs`를 기록해 다음 날 중복 발송하지 않습니다. 일일 MailApp 할당량이 전체 대상보다 적으면 발송하지 않고 `QUOTA_BLOCKED`를 기록합니다. 개인별 실패는 나머지 발송을 중단하지 않습니다.
+
+Apps Script 편집기에서 `installDailyJobDigestTrigger()`를 한 번 실행하면 Asia/Seoul 기준 매일 오전 8시 시간 기반 Trigger가 생성됩니다. 또는 **Apps Script → 트리거(시계 아이콘) → 트리거 추가**에서 실행 함수 `sendDailyJobDigest`, 이벤트 소스 `시간 기반`, 유형 `일 단위 타이머`를 선택합니다.
+
+관리자 화면의 **기존 졸업생 수신 설정 안내**는 수신 여부가 빈값이고 아직 안내 성공 기록이 없는 승인 졸업생에게만 1회 안내합니다. 수신을 원하지 않으면 아무 조치가 없어도 발송 대상에 포함되지 않습니다. **채용메일 지금 점검·발송**은 운영 점검용 수동 실행 기능입니다.
+
+### 배포 후 추가 검증
+
+- `migrateJobsFeature()` 실행 전후 기존 `alumni`, `contact_requests`, `admins`, `logs` 행 수와 값이 동일한지 확인
+- Alumni ID + PIN 확인 → 공고 등록 → `jobs`의 `PENDING` 저장 → 관리자 HTML 메일 수신
+- 승인·반려 링크가 7일 내 한 번만 처리되고 공고 ID 변조 시 거부되는지 확인
+- 승인 후 홈, 목록, 상세, 졸업생 프로필에 즉시 표시되는지 확인
+- 채용 문의 메일에 공고 ID·회사·직무가 포함되고 개인정보가 공개 API에 없는지 확인
+- `TRUE` 수신자만 Digest를 받고 빈값/`FALSE` 사용자는 제외되는지 확인
+- 여러 공고가 한 통으로 묶이고 다음 실행에서 같은 공고가 재발송되지 않는지 확인
+- 마감 공고가 `EXPIRED`가 되어 공개 목록에서 제외되는지 확인

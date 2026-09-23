@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  if (!document.querySelector('link[href="css/jobs.css"]')) { const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'css/jobs.css'; document.head.appendChild(link); }
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const qs = (s, root = document) => root.querySelector(s);
   const qsa = (s, root = document) => [...root.querySelectorAll(s)];
@@ -18,6 +19,15 @@
   }
   function initNav() {
     const toggle = qs('.nav-toggle'); const nav = qs('.site-nav');
+    if (nav && !nav.querySelector('a[href="jobs.html"]')) {
+      const link = document.createElement('a'); link.href = 'jobs.html'; link.textContent = '채용정보';
+      const alumniLink = nav.querySelector('a[href="alumni.html"]'); nav.insertBefore(link, alumniLink || null);
+    }
+    const consent = qs('.consent-box');
+    if (consent && !qs('[name="career_mail_enabled"]')) {
+      const note = consent.querySelector('.hint');
+      note?.insertAdjacentHTML('beforebegin', '<label class="check"><input name="career_mail_enabled" type="checkbox">취업·채용정보 이메일 수신에 동의합니다.</label><p class="hint">취업·채용정보 이메일 수신에 동의한 경우, 승인된 신규 채용정보가 있을 때 이메일로 안내합니다. 채용정보가 없는 날에는 발송하지 않습니다.</p>');
+    }
     toggle?.addEventListener('click', () => {
       const open = toggle.getAttribute('aria-expanded') === 'true';
       toggle.setAttribute('aria-expanded', String(!open)); nav?.classList.toggle('is-open', !open);
@@ -45,5 +55,9 @@
   }
   function params() { return new URLSearchParams(location.search); }
   window.AlumniUI = { esc, qs, qsa, status, busy, yearOptions, selectOptions, options, params };
+  window.JobUI = window.JobUI || {
+    dday(job) { if (job.always_open) return '상시채용'; if (!job.deadline) return '마감일 미정'; const today = new Date(); today.setHours(0,0,0,0); const days = Math.ceil((new Date(job.deadline + 'T00:00:00') - today) / 86400000); return days === 0 ? '오늘 마감' : days > 0 ? `D-${days}` : '마감'; },
+    card(job) { const skills = (job.skills || []).slice(0,4).map(x => `<span class="chip">${esc(x)}</span>`).join(''); return `<article class="card job-card"><div class="job-card__flags"><span>${esc(job.recruit_type)}</span>${job.referral_available?'<strong>사내추천 가능</strong>':''}</div><h3>${esc(job.company)}</h3><p class="job-title">${esc(job.job_title)}</p><p class="meta">${esc(job.employment_type)} · ${esc(job.location||'근무지역 협의')}</p><div class="chips">${skills}</div><div class="job-card__foot"><span>${esc(this.dday(job))}</span><span>${esc(job.graduation_year)}년 졸업생 공유</span></div><a class="button" href="job-detail.html?id=${encodeURIComponent(job.job_id)}">자세히 보기</a></article>`; }
+  };
   document.addEventListener('DOMContentLoaded', initNav);
 })();

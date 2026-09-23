@@ -1,63 +1,9 @@
-(function () {
-  'use strict';
-  const U = AlumniUI;
-  let token = '', view = 'alumni', data = [];
-  const st = () => U.qs('#admin-status');
-  const statusBadge = value => `<span class="admin-badge admin-badge--${U.esc(String(value || '').toLowerCase())}">${U.esc(value)}</span>`;
-  const contactLinks = item => {
-    const email = String(item.email || ''), phone = String(item.phone || ''), parts = [];
-    if (email) parts.push(`<a href="mailto:${encodeURIComponent(email)}">${U.esc(email)}</a>`);
-    if (phone) parts.push(`<a href="tel:${U.esc(phone.replace(/[^0-9+]/g, ''))}">${U.esc(phone)}</a>`);
-    return parts.join('<br>') || '-';
-  };
-
-  async function load() {
-    U.status(st(), '관리 데이터를 불러오는 중입니다.');
-    try {
-      const response = await AlumniAPI.request('adminList', { method: 'POST', data: { admin_token: token, view } });
-      data = response.data || [];
-      U.qs('#admin-app').hidden = false;
-      render();
-      st().hidden = true;
-    } catch (error) { U.status(st(), error.message, 'error'); }
-  }
-
-  function requestTable(rows) {
-    return `<table class="admin-table admin-table--requests"><thead><tr><th>일시</th><th>대상 ID</th><th>요청자</th><th>분야/제목</th><th>상태</th></tr></thead><tbody>${rows.map(item => `<tr><td data-label="일시">${U.esc(item.created_at)}</td><td data-label="대상 ID"><small>${U.esc(item.alumni_id)}</small></td><td data-label="요청자">${U.esc(item.requester_name)} (${U.esc(item.requester_type)})</td><td data-label="분야/제목"><strong>${U.esc(item.category)}</strong><br>${U.esc(item.subject)}</td><td data-label="상태">${statusBadge(item.status)}</td></tr>`).join('')}</tbody></table>`;
-  }
-
-  function alumniTable(rows) {
-    return `<table class="admin-table admin-table--alumni"><thead><tr><th>이름/ID</th><th>연락처</th><th>졸업</th><th>회사</th><th>대학원</th><th>상태</th><th>관리</th></tr></thead><tbody>${rows.map(item => `<tr><td data-label="이름/ID"><strong>${U.esc(item.name)}</strong><br><small>${U.esc(item.alumni_id)}</small></td><td data-label="연락처" class="admin-contact">${contactLinks(item)}</td><td data-label="졸업">${U.esc(item.graduation_year)}</td><td data-label="회사">${U.esc(item.company) || '-'}</td><td data-label="대학원">${U.esc(item.graduate_school) || U.esc(item.graduate_status) || '-'}</td><td data-label="상태">${statusBadge(item.status)}</td><td data-label="관리"><div class="admin-actions"><button data-id="${U.esc(item.alumni_id)}" data-action="adminApprove">승인</button><button class="button--danger" data-id="${U.esc(item.alumni_id)}" data-action="adminReject">반려</button><button class="button--ghost" data-id="${U.esc(item.alumni_id)}" data-action="adminHide">비공개</button></div></td></tr>`).join('')}</tbody></table>`;
-  }
-
-  function render() {
-    const query = U.qs('#admin-query').value.toLowerCase(), status = U.qs('#admin-status-filter').value, year = U.qs('#admin-year').value;
-    const rows = data.filter(item => (!query || JSON.stringify(item).toLowerCase().includes(query)) && (!status || item.status === status) && (!year || String(item.graduation_year) === year));
-    U.qs('#admin-table').innerHTML = rows.length ? (view === 'requests' ? requestTable(rows) : alumniTable(rows)) : '<p class="empty">조건에 맞는 데이터가 없습니다.</p>';
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    U.yearOptions(U.qs('#admin-year'), true);
-    const client = (window.ALUMNI_CONFIG || {}).GOOGLE_CLIENT_ID;
-    if (client && !client.startsWith('PASTE_')) {
-      const wait = setInterval(() => {
-        if (!window.google) return;
-        clearInterval(wait);
-        google.accounts.id.initialize({ client_id: client, callback: response => { token = response.credential; load(); } });
-        google.accounts.id.renderButton(U.qs('#google-signin'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'ko' });
-      }, 100);
-    } else U.status(st(), 'Google OAuth Client ID가 아직 설정되지 않았습니다.', 'warning');
-    U.qs('#admin-load').onclick = () => { token = U.qs('#admin-token').value.trim(); if (!token) return U.status(st(), '관리자 토큰을 입력해 주세요.', 'error'); load(); };
-    U.qs('#admin-refresh').onclick = load;
-    ['#admin-query', '#admin-status-filter', '#admin-year'].forEach(selector => U.qs(selector).addEventListener(selector === '#admin-query' ? 'input' : 'change', render));
-    U.qsa('[data-view]').forEach(button => button.onclick = () => { view = button.dataset.view; U.qsa('[data-view]').forEach(item => item.setAttribute('aria-selected', String(item === button))); load(); });
-    U.qs('#admin-table').onclick = async event => {
-      const button = event.target.closest('button[data-action]');
-      if (!button || !confirm('이 상태로 변경하시겠습니까?')) return;
-      U.busy(button, true);
-      try { await AlumniAPI.request(button.dataset.action, { method: 'POST', data: { admin_token: token, alumni_id: button.dataset.id } }); await load(); }
-      catch (error) { U.status(st(), error.message, 'error'); }
-      finally { U.busy(button, false); }
-    };
-  });
-})();
+(function(){'use strict';const U=AlumniUI;let token='',view='alumni',data=[];const st=()=>U.qs('#admin-status');const badge=v=>`<span class="admin-badge admin-badge--${U.esc(String(v||'').toLowerCase())}">${U.esc(v)}</span>`;function contacts(x){const p=[];if(x.email)p.push(`<a href="mailto:${encodeURIComponent(x.email)}">${U.esc(x.email)}</a>`);if(x.phone)p.push(`<a href="tel:${U.esc(String(x.phone).replace(/[^0-9+]/g,''))}">${U.esc(x.phone)}</a>`);return p.join('<br>')||'-'}
+async function load(){U.status(st(),'관리 데이터를 불러오는 중입니다.');try{data=(await AlumniAPI.request('adminList',{method:'POST',data:{admin_token:token,view}})).data||[];U.qs('#admin-app').hidden=false;render();st().hidden=true}catch(e){U.status(st(),e.message,'error')}}
+function alumniTable(rows){return`<table class="admin-table"><thead><tr><th>이름/ID</th><th>연락처</th><th>졸업</th><th>회사</th><th>채용메일</th><th>상태</th><th>관리</th></tr></thead><tbody>${rows.map(x=>`<tr><td data-label="이름/ID"><strong>${U.esc(x.name)}</strong><br><small>${U.esc(x.alumni_id)}</small></td><td data-label="연락처">${contacts(x)}</td><td data-label="졸업">${U.esc(x.graduation_year)}</td><td data-label="회사">${U.esc(x.company)||'-'}</td><td data-label="채용메일">${x.career_mail_enabled===true?'동의':x.career_mail_enabled===false?'거부':'미설정'}</td><td data-label="상태">${badge(x.status)}</td><td data-label="관리"><div class="admin-actions"><button data-id="${U.esc(x.alumni_id)}" data-action="adminApprove">승인</button><button class="button--danger" data-id="${U.esc(x.alumni_id)}" data-action="adminReject">반려</button><button class="button--ghost" data-id="${U.esc(x.alumni_id)}" data-action="adminHide">비공개</button></div></td></tr>`).join('')}</tbody></table>`}
+function jobsTable(rows){return`<table class="admin-table"><thead><tr><th>회사/직무</th><th>등록 졸업생</th><th>구분/마감</th><th>추천</th><th>등록/승인</th><th>상태</th><th>관리</th></tr></thead><tbody>${rows.map(x=>`<tr><td data-label="회사/직무"><strong>${U.esc(x.company)}</strong><br>${U.esc(x.job_title)}</td><td data-label="등록 졸업생">${U.esc(x.alumni_name_admin)}<br>${U.esc(x.graduation_year)}년</td><td data-label="구분/마감">${U.esc(x.recruit_type)} · ${U.esc(x.employment_type)}<br>${x.always_open?'상시채용':U.esc(x.deadline)||'-'}</td><td data-label="추천">${x.referral_available?'가능':'일반'}</td><td data-label="등록/승인"><small>${U.esc(x.created_at)}<br>${U.esc(x.approved_at)||'-'}</small></td><td data-label="상태">${badge(x.status)}</td><td data-label="관리"><div class="admin-actions"><a class="button button--secondary" href="job-detail.html?id=${encodeURIComponent(x.job_id)}" target="_blank">상세</a><button data-job-id="${U.esc(x.job_id)}" data-action="adminJobApprove">승인</button><button class="button--danger" data-job-id="${U.esc(x.job_id)}" data-action="adminJobReject">반려</button><button class="button--ghost" data-job-id="${U.esc(x.job_id)}" data-action="adminJobHide">숨김</button><button class="button--secondary" data-job-id="${U.esc(x.job_id)}" data-action="adminJobPublish">다시 게시</button></div></td></tr>`).join('')}</tbody></table>`}
+function requestsTable(rows){return`<table class="admin-table"><thead><tr><th>일시</th><th>대상 ID</th><th>요청자</th><th>분야/제목</th><th>상태</th></tr></thead><tbody>${rows.map(x=>`<tr><td data-label="일시">${U.esc(x.created_at)}</td><td data-label="대상 ID"><small>${U.esc(x.alumni_id)}</small></td><td data-label="요청자">${U.esc(x.requester_name)} (${U.esc(x.requester_type)})</td><td data-label="분야/제목"><strong>${U.esc(x.category)}</strong><br>${U.esc(x.subject)}</td><td data-label="상태">${badge(x.status)}</td></tr>`).join('')}</tbody></table>`}
+function logsTable(rows){return`<table class="admin-table"><thead><tr><th>발송일</th><th>공고 ID</th><th>대상</th><th>성공</th><th>실패</th><th>상태</th></tr></thead><tbody>${rows.map(x=>`<tr><td data-label="발송일">${U.esc(x.sent_at)}</td><td data-label="공고 ID"><small>${U.esc(String(x.job_ids).split('|').join(', '))}</small></td><td data-label="대상">${U.esc(x.recipient_count)}</td><td data-label="성공">${U.esc(x.sent_count)}</td><td data-label="실패">${U.esc(x.failed_count)}</td><td data-label="상태">${badge(x.status)}</td></tr>`).join('')}</tbody></table>`}
+function render(){const q=U.qs('#admin-query').value.toLowerCase(),status=U.qs('#admin-status-filter').value,year=U.qs('#admin-year').value,rows=data.filter(x=>(!q||JSON.stringify(x).toLowerCase().includes(q))&&(!status||x.status===status)&&(!year||String(x.graduation_year)===year));const renderers={alumni:alumniTable,jobs:jobsTable,requests:requestsTable,mail_logs:logsTable};U.qs('#admin-table').innerHTML=rows.length?renderers[view](rows):'<p class="empty">조건에 맞는 데이터가 없습니다.</p>'}
+async function utility(action,button,question){if(!confirm(question))return;U.busy(button,true,'처리 중…');try{const r=await AlumniAPI.request(action,{method:'POST',data:{admin_token:token}});U.status(st(),r.message,'success');await load()}catch(e){U.status(st(),e.message,'error')}finally{U.busy(button,false)}}
+document.addEventListener('DOMContentLoaded',()=>{U.yearOptions(U.qs('#admin-year'),true);const client=(window.ALUMNI_CONFIG||{}).GOOGLE_CLIENT_ID;if(client&&!client.startsWith('PASTE_')){const wait=setInterval(()=>{if(!window.google)return;clearInterval(wait);google.accounts.id.initialize({client_id:client,callback:r=>{token=r.credential;load()}});google.accounts.id.renderButton(U.qs('#google-signin'),{theme:'outline',size:'large',text:'signin_with',locale:'ko'})},100)}else U.status(st(),'Google OAuth Client ID가 아직 설정되지 않았습니다.','warning');U.qs('#admin-load').onclick=()=>{token=U.qs('#admin-token').value.trim();if(!token)return U.status(st(),'관리자 토큰을 입력해 주세요.','error');load()};U.qs('#admin-refresh').onclick=load;['#admin-query','#admin-status-filter','#admin-year'].forEach(s=>U.qs(s).addEventListener(s==='#admin-query'?'input':'change',render));U.qsa('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;U.qsa('[data-view]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));load()});U.qs('#send-consent-invites').onclick=e=>utility('adminSendCareerConsentInvites',e.currentTarget,'수신 여부가 미설정인 기존 졸업생에게 안내 메일을 1회 발송할까요?');U.qs('#run-job-digest').onclick=e=>utility('adminRunJobDigest',e.currentTarget,'발송 대기 중인 채용정보 다이제스트를 지금 처리할까요?');U.qs('#admin-table').onclick=async e=>{const b=e.target.closest('button[data-action]');if(!b||!confirm('이 상태로 변경하시겠습니까?'))return;U.busy(b,true);try{const payload={admin_token:token};if(b.dataset.jobId)payload.job_id=b.dataset.jobId;else payload.alumni_id=b.dataset.id;await AlumniAPI.request(b.dataset.action,{method:'POST',data:payload});await load()}catch(err){U.status(st(),err.message,'error')}finally{U.busy(b,false)}}})})();
