@@ -138,6 +138,49 @@ CNAME
 
 Apps Script 편집기에서 `installDailyJobDigestTrigger()`를 한 번 실행하면 Asia/Seoul 기준 매일 오전 8시 시간 기반 Trigger가 생성됩니다. 또는 **Apps Script → 트리거(시계 아이콘) → 트리거 추가**에서 실행 함수 `sendDailyJobDigest`, 이벤트 소스 `시간 기반`, 유형 `일 단위 타이머`를 선택합니다.
 
+## 동문소식
+
+`news.html`, `news-detail.html`, `news-submit.html`은 취업, 이직, 승진·보직, 창업, 대학원·학위, 수상·성과, 결혼, 득남, 득녀, 부고, 기타 소식을 제공한다. 모든 소식은 등록 즉시 `PENDING`으로 저장되고 관리자 승인 후 공개된다. 사진은 직접 저장하지 않으며 청첩장, 부고장, 성과 페이지 같은 HTTPS 외부 URL만 연결한다.
+
+일반 소식은 본인의 `alumni_id`와 `submitted_by_alumni_id`가 같다. 부고는 인증된 다른 졸업생이 승인된 대상 동문을 공개정보로 검색해 대신 등록할 수 있으며, 이 경우 `alumni_id`는 소식 대상, `submitted_by_alumni_id`는 실제 등록자다. 공개 검색과 공개 API에는 이메일, 휴대전화, 학번, PIN 해시, 승인 nonce와 만료시간을 반환하지 않는다.
+
+지원 enum은 `EMPLOYMENT`, `JOB_CHANGE`, `PROMOTION`, `STARTUP`, `GRADUATE_SCHOOL`, `ACHIEVEMENT`, `MARRIAGE`, `BIRTH_SON`, `BIRTH_DAUGHTER`, `OBITUARY`, `OTHER`이며 화면에는 한글 명칭만 표시한다.
+
+### Sheets 마이그레이션
+
+Apps Script 편집기에서 `migrateAlumniNewsFeature()`를 한 번 실행한다. 기존 시트·행·값은 삭제하거나 변경하지 않고 다음 구조만 추가한다.
+
+- `alumni` 마지막 열: `alumni_news_mail_enabled`, `alumni_news_mail_consent_at`, `alumni_news_mail_updated_at`
+- `alumni_news`: 소식 본문, 대상/등록자, 승인 및 일회용 nonce 상태
+- `alumni_news_mail_logs`: 소식별 전체메일 대상·성공·실패·상태
+- `alumni_news_consent_invites`: 기존 졸업생 안내메일 1회 발송 기록
+- 기존 `alumni_consent_logs`: `consent_type=ALUMNI_NEWS_MAIL`로 변경 이력 추가
+
+기존 졸업생의 `alumni_news_mail_enabled`는 빈값으로 유지된다. `TRUE`인 승인 졸업생만 전체메일 대상이며 `FALSE`와 빈값은 제외한다. 채용메일의 `career_mail_enabled`와 완전히 별도다.
+
+### 승인과 경조사 이메일
+
+등록 알림은 기존 `ADMIN_NOTIFICATION_EMAIL`과 `APPROVAL_TOKEN_SECRET`을 재사용한다. 관리자 HTML 이메일의 `게시 + 이메일 발송`, `게시만 하기`, `반려` 링크는 HMAC-SHA256, 약 7일 만료, 1회용 nonce로 보호된다. 관리자 화면도 같은 서버 처리 함수를 사용한다.
+
+결혼·득남·득녀·부고 등록폼의 메일 요청은 기본 ON이고 일반 소식은 기본 OFF다. 요청 여부와 관계없이 관리자가 최종적으로 게시+메일을 선택해야 발송된다. 부고 이메일은 회색 계열의 정중한 디자인을 사용한다.
+
+`alumni_news_mail_logs`에 이미 `SENT`인 `news_id`가 있으면 재발송하지 않는다. 발송 전 `MailApp.getRemainingDailyQuota()`를 검사하며 전체 대상보다 부족하면 일부 발송 없이 `QUOTA_BLOCKED`를 기록한다. 일부 수신자 실패는 `PARTIAL_FAILED`, 전체 실패는 `FAILED`로 기록하되 게시 상태 `APPROVED`는 유지한다.
+
+관리자 화면의 동문소식 관리 탭에서 게시+메일, 게시만, 반려, 숨김, 다시 게시를 처리하고, 통합 메일 발송 기록에서 채용정보와 동문소식 메일을 함께 확인한다. `기존 졸업생 동문소식 수신 설정 안내`는 미설정 승인 졸업생에게 한 사람당 한 번만 발송한다.
+
+### 동문소식 배포 점검
+
+1. `migrateAlumniNewsFeature()` 실행 성공을 확인한다.
+2. 기존 Web App 배포를 새 버전으로 업데이트해 API URL을 유지한다.
+3. GitHub `main` 반영 후 `news.html`, `news-detail.html`, `news-submit.html`을 확인한다.
+4. 일반 소식과 부고 대리 등록이 `PENDING`으로 저장되는지 확인한다.
+5. 승인메일의 세 링크가 한 번만 처리되는지 확인한다.
+6. `alumni_news_mail_enabled == TRUE`인 승인 졸업생만 메일을 받는지 확인한다.
+7. 동일 `news_id` 재승인·새로고침 시 중복메일이 발송되지 않는지 확인한다.
+8. 공개 API 응답에 이메일, 전화번호, PIN, nonce가 없는지 확인한다.
+
+추가 Script Property는 필요하지 않다. 기존 `SPREADSHEET_ID`, `GOOGLE_CLIENT_ID`, `ADMIN_NOTIFICATION_EMAIL`, `PIN_PEPPER`, `APPROVAL_TOKEN_SECRET`, 선택 `SITE_URL`을 그대로 사용한다. README나 GitHub에는 실제 개인정보, PIN, 토큰, 비밀값을 기록하지 않는다.
+
 관리자 화면의 **기존 졸업생 수신 설정 안내**는 수신 여부가 빈값이고 아직 안내 성공 기록이 없는 승인 졸업생에게만 1회 안내합니다. 수신을 원하지 않으면 아무 조치가 없어도 발송 대상에 포함되지 않습니다. **채용메일 지금 점검·발송**은 운영 점검용 수동 실행 기능입니다.
 
 ### 배포 후 추가 검증
