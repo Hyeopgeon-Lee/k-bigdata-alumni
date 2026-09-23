@@ -1,6 +1,7 @@
 .admin-table small{overflow-wrap:anywhere;color:var(--muted)}
 .admin-actions{display:flex;flex-wrap:wrap;gap:.45rem}
 .admin-actions button{min-width:4.25rem}
+.admin-contact a{overflow-wrap:anywhere}
 .admin-badge{display:inline-flex;border-radius:999px;padding:.2rem .55rem;background:#edf2f7;font-size:.82rem;font-weight:800;white-space:nowrap}
 .admin-badge--approved{background:#e7f6ed;color:var(--ok)}
 .admin-badge--pending{background:#fff6e8;color:var(--warn)}

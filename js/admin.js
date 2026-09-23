@@ -4,6 +4,12 @@
   let token = '', view = 'alumni', data = [];
   const st = () => U.qs('#admin-status');
   const statusBadge = value => `<span class="admin-badge admin-badge--${U.esc(String(value || '').toLowerCase())}">${U.esc(value)}</span>`;
+  const contactLinks = item => {
+    const email = String(item.email || ''), phone = String(item.phone || ''), parts = [];
+    if (email) parts.push(`<a href="mailto:${encodeURIComponent(email)}">${U.esc(email)}</a>`);
+    if (phone) parts.push(`<a href="tel:${U.esc(phone.replace(/[^0-9+]/g, ''))}">${U.esc(phone)}</a>`);
+    return parts.join('<br>') || '-';
+  };
 
   async function load() {
     U.status(st(), '관리 데이터를 불러오는 중입니다.');
@@ -21,7 +27,7 @@
   }
 
   function alumniTable(rows) {
-    return `<table class="admin-table admin-table--alumni"><thead><tr><th>이름/ID</th><th>졸업</th><th>회사</th><th>대학원</th><th>상태</th><th>관리</th></tr></thead><tbody>${rows.map(item => `<tr><td data-label="이름/ID"><strong>${U.esc(item.name)}</strong><br><small>${U.esc(item.alumni_id)}</small></td><td data-label="졸업">${U.esc(item.graduation_year)}</td><td data-label="회사">${U.esc(item.company) || '-'}</td><td data-label="대학원">${U.esc(item.graduate_school) || U.esc(item.graduate_status) || '-'}</td><td data-label="상태">${statusBadge(item.status)}</td><td data-label="관리"><div class="admin-actions"><button data-id="${U.esc(item.alumni_id)}" data-action="adminApprove">승인</button><button class="button--danger" data-id="${U.esc(item.alumni_id)}" data-action="adminReject">반려</button><button class="button--ghost" data-id="${U.esc(item.alumni_id)}" data-action="adminHide">비공개</button></div></td></tr>`).join('')}</tbody></table>`;
+    return `<table class="admin-table admin-table--alumni"><thead><tr><th>이름/ID</th><th>연락처</th><th>졸업</th><th>회사</th><th>대학원</th><th>상태</th><th>관리</th></tr></thead><tbody>${rows.map(item => `<tr><td data-label="이름/ID"><strong>${U.esc(item.name)}</strong><br><small>${U.esc(item.alumni_id)}</small></td><td data-label="연락처" class="admin-contact">${contactLinks(item)}</td><td data-label="졸업">${U.esc(item.graduation_year)}</td><td data-label="회사">${U.esc(item.company) || '-'}</td><td data-label="대학원">${U.esc(item.graduate_school) || U.esc(item.graduate_status) || '-'}</td><td data-label="상태">${statusBadge(item.status)}</td><td data-label="관리"><div class="admin-actions"><button data-id="${U.esc(item.alumni_id)}" data-action="adminApprove">승인</button><button class="button--danger" data-id="${U.esc(item.alumni_id)}" data-action="adminReject">반려</button><button class="button--ghost" data-id="${U.esc(item.alumni_id)}" data-action="adminHide">비공개</button></div></td></tr>`).join('')}</tbody></table>`;
   }
 
   function render() {
