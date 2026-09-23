@@ -14,9 +14,10 @@ function routePost_(action,b){if(action==='register')return register_(b);if(acti
 function respond_(obj){return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);}
 function safeError_(e){const allowed=['지원하지','찾을 수','입력','형식','필수','PIN','권한','요청','허용','중복','길이','동의','설정'];return allowed.some(x=>String(e.message).includes(x))?e.message:'처리 중 오류가 발생했습니다.';}
 
-function setup(){const ss=SpreadsheetApp.getActive();ensure_(ss,SHEETS.ALUMNI,ALUMNI_HEADERS);ensure_(ss,SHEETS.CONTACTS,CONTACT_HEADERS);ensure_(ss,SHEETS.ADMINS,ADMIN_HEADERS);ensure_(ss,SHEETS.LOGS,LOG_HEADERS);const props=PropertiesService.getScriptProperties();if(!props.getProperty('PIN_PEPPER'))props.setProperty('PIN_PEPPER',Utilities.getUuid()+Utilities.getUuid());}
+function setup(){const ss=db_();ensure_(ss,SHEETS.ALUMNI,ALUMNI_HEADERS);ensure_(ss,SHEETS.CONTACTS,CONTACT_HEADERS);ensure_(ss,SHEETS.ADMINS,ADMIN_HEADERS);ensure_(ss,SHEETS.LOGS,LOG_HEADERS);const props=PropertiesService.getScriptProperties();if(!props.getProperty('PIN_PEPPER'))props.setProperty('PIN_PEPPER',Utilities.getUuid()+Utilities.getUuid());}
 function ensure_(ss,name,headers){let sh=ss.getSheetByName(name);if(!sh)sh=ss.insertSheet(name);if(sh.getLastRow()===0)sh.appendRow(headers);const got=sh.getRange(1,1,1,headers.length).getValues()[0];if(headers.some((h,i)=>got[i]!==h))throw new Error(name+' 시트 헤더가 README 구조와 다릅니다.');sh.setFrozenRows(1);}
-function sheet_(name){const sh=SpreadsheetApp.getActive().getSheetByName(name);if(!sh)throw new Error('데이터 저장소가 설정되지 않았습니다. setup을 실행해 주세요.');return sh;}
+function db_(){const id=PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');if(!id)throw new Error('SPREADSHEET_ID 설정이 필요합니다.');return SpreadsheetApp.openById(id);}
+function sheet_(name){const sh=db_().getSheetByName(name);if(!sh)throw new Error('데이터 저장소가 설정되지 않았습니다. setup을 실행해 주세요.');return sh;}
 function rows_(name,headers){const sh=sheet_(name);if(sh.getLastRow()<2)return[];return sh.getRange(2,1,sh.getLastRow()-1,headers.length).getValues().map((r,i)=>Object.assign({__row:i+2},Object.fromEntries(headers.map((h,j)=>[h,r[j]]))));}
 function append_(name,headers,obj){sheet_(name).appendRow(headers.map(h=>obj[h]===undefined?'':obj[h]));}
 function updateRow_(name,headers,row,obj){sheet_(name).getRange(row,1,1,headers.length).setValues([headers.map(h=>obj[h]===undefined?'':obj[h])]);}

@@ -40,8 +40,9 @@ CNAME
 
 1. 빈 Google Sheets를 만들고 **확장 프로그램 → Apps Script**를 엽니다.
 2. `apps-script/Code.gs`와 `apps-script/appsscript.json` 내용을 각각 복사합니다.
-3. Apps Script에서 `setup()`을 한 번 실행하고 권한을 승인합니다. 다음 시트와 헤더가 자동 생성됩니다.
-4. `admins` 시트에 관리자 Google 이메일, `ACTIVE`, 생성일을 한 행 추가합니다.
+3. Apps Script **프로젝트 설정 → 스크립트 속성**에 `SPREADSHEET_ID`를 만들고 Sheets URL의 `/d/` 다음 ID를 저장합니다.
+4. Apps Script에서 `setup()`을 한 번 실행하고 권한을 승인합니다. 다음 시트와 헤더가 자동 생성됩니다.
+5. `admins` 시트에 관리자 Google 이메일, `ACTIVE`, 생성일을 한 행 추가합니다.
 
 ### `alumni`
 
