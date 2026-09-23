@@ -1,0 +1,33 @@
+.admin-table small{overflow-wrap:anywhere;color:var(--muted)}
+.admin-actions{display:flex;flex-wrap:wrap;gap:.45rem}
+.admin-actions button{min-width:4.25rem}
+.admin-badge{display:inline-flex;border-radius:999px;padding:.2rem .55rem;background:#edf2f7;font-size:.82rem;font-weight:800;white-space:nowrap}
+.admin-badge--approved{background:#e7f6ed;color:var(--ok)}
+.admin-badge--pending{background:#fff6e8;color:var(--warn)}
+.admin-badge--rejected{background:#fff0ee;color:var(--bad)}
+.admin-badge--hidden{background:#edf2f7;color:var(--muted)}
+.detail-company-link{font-weight:800;text-decoration:underline;text-underline-offset:.2em}
+
+@media (max-width:699px){
+  #admin-app .tabs{display:grid;grid-template-columns:1fr 1fr}
+  #admin-app .tabs button{width:100%;padding-inline:.5rem}
+  #admin-app .panel{padding:.9rem}
+  .admin-table{min-width:0}
+  .admin-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .admin-table,.admin-table tbody,.admin-table tr,.admin-table td{display:block;width:100%}
+  .admin-table tbody{display:grid;gap:.8rem;padding:.8rem}
+  .admin-table tr{border:1px solid var(--line);border-radius:12px;padding:.75rem;background:#fff;box-shadow:0 3px 12px rgba(16,42,67,.06)}
+  .admin-table td{display:grid;grid-template-columns:minmax(5.8rem,36%) minmax(0,1fr);gap:.65rem;padding:.45rem 0;border:0;overflow-wrap:anywhere}
+  .admin-table td::before{content:attr(data-label);font-weight:800;color:var(--muted)}
+  .admin-table td[data-label="관리"]{display:block;border-top:1px solid var(--line);margin-top:.35rem;padding-top:.75rem}
+  .admin-table td[data-label="관리"]::before{display:block;margin-bottom:.55rem}
+  .admin-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .admin-actions button{width:100%;min-width:0;padding-inline:.4rem}
+  .table-wrap{overflow:visible;border:0;background:transparent}
+  .admin-table--requests td{grid-template-columns:minmax(5.8rem,32%) minmax(0,1fr)}
+}
+
+@media (min-width:700px){
+  .admin-table th,.admin-table td{padding:.8rem .65rem}
+  .admin-table th:last-child,.admin-table td:last-child{min-width:230px}
+}
