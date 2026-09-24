@@ -74,6 +74,33 @@ CNAME
 
 ## GitHub Pages와 Custom Domain
 
+## Alumni ID 찾기와 PIN 재설정
+
+`alumni.html`의 기존 정보 수정 탭에서 Alumni ID 안내 메일과 PIN 재설정을 이용할 수 있습니다. Alumni ID 찾기는 이름·졸업연도·등록 이메일이 일치할 때만 등록 이메일로 ID를 보내며, 웹 응답은 일치 여부와 무관하게 동일합니다.
+
+PIN은 찾거나 복호화하지 않습니다. Alumni ID와 등록 이메일 확인 후 6자리 인증번호를 보내고, 인증에 성공하면 기존 `PIN_PEPPER + alumni_id` HMAC-SHA256 방식으로 `edit_pin_hash`만 교체합니다. 공개 프로필을 변경하지 않으므로 기존 `status`와 다른 모든 Alumni 데이터는 유지됩니다.
+
+`pin_reset_requests` 시트 헤더:
+
+`request_id, alumni_id, code_hash, expires_at, attempt_count, status, created_at, completed_at`
+
+- 인증번호 원문은 저장하지 않으며 요청 ID와 결합한 HMAC 해시만 저장합니다.
+- 인증번호는 10분 동안 유효하고 잘못 입력한 횟수가 5회가 되면 `LOCKED` 처리됩니다.
+- 완료된 요청은 `COMPLETED`, 만료 요청은 `EXPIRED`이며 재사용할 수 없습니다.
+- 반복 메일 요청은 서버 캐시로 제한하고 요청·실패·완료 결과를 기존 `logs`에 기록합니다.
+- 복구 API는 `findAlumniId`, `requestPinReset`, `resetPin`이며 이메일·PIN·인증번호 해시를 공개 응답에 포함하지 않습니다.
+
+배포 시 Apps Script 편집기에서 `migrateAccountRecoveryFeature()`를 한 번 실행한 뒤 기존 Web App 배포를 새 버전으로 업데이트합니다. 이 함수는 기존 시트와 행을 삭제하거나 수정하지 않고 `pin_reset_requests` 시트가 없을 때만 생성합니다. 기존 `/exec` URL을 유지한 상태로 `alumni.html`에서 ID 안내와 PIN 재설정 흐름을 확인합니다.
+
+계정 복구 점검 항목:
+
+- 불일치 입력도 동일한 안내 문구를 표시하고 웹에 Alumni ID를 노출하지 않음
+- 인증번호 원문과 새 PIN이 Sheets·로그·공개 API에 남지 않음
+- 잘못된 인증번호 5회 입력 시 `LOCKED`
+- 10분이 지난 요청 거부 및 완료 요청 재사용 거부
+- PIN 재설정 전후 Alumni `status` 및 프로필·동의 데이터 동일
+- 기존 Alumni ID + PIN 조회·일반 정보 수정 흐름 정상
+
 1. GitHub 저장소 **Settings → Pages**에서 `main` 브랜치 루트 배포를 선택합니다.
 2. Custom domain을 `alumni.k-bigdata.kr`로 지정하고 DNS 확인 뒤 **Enforce HTTPS**를 켭니다.
 3. 저장소의 `CNAME`은 이미 `alumni.k-bigdata.kr`로 구성되어 있습니다.
