@@ -220,3 +220,20 @@ Apps Script 편집기에서 `migrateAlumniNewsFeature()`를 한 번 실행한다
 - `TRUE` 수신자만 Digest를 받고 빈값/`FALSE` 사용자는 제외되는지 확인
 - 여러 공고가 한 통으로 묶이고 다음 실행에서 같은 공고가 재발송되지 않는지 확인
 - 마감 공고가 `EXPIRED`가 되어 공개 목록에서 제외되는지 확인
+
+## 공개 조회 성능과 연동 API
+
+홈은 `GET action=home` 한 번으로 승인 졸업생, 최근 채용정보 3건, 최근 동문소식 5건을 받는다. 졸업생 상세는 `GET action=alumniDetail&id=...` 한 번으로 프로필과 연결된 채용정보·동문소식을 받는다. 서버는 요청별로 시트를 한 번 읽고 메모리 인덱스로 결합하며, 공개 목록은 Apps Script `CacheService`에 최대 6시간 보관한다. 등록·수정·승인·숨김 등 데이터 변경 시 관련 캐시를 즉시 무효화한다.
+
+공개 GET 요청은 시트를 수정하지 않는다. 마감 공고 갱신은 `expireJobsScheduled()`가 담당하며, Apps Script에서 `installExpireJobsTrigger()`를 한 번 실행하면 매일 오전 1시 트리거가 생성된다. 기존 일일 채용 Digest는 실행 전에 동일 만료 함수를 호출한다.
+
+학과 홈페이지 연동용 `GET action=careerPublic`은 승인 상태이면서 현재 취업 상태가 정확히 `취업 중`인 행만 반환한다. 반환 필드는 `graduation_year`, 서버에서 마스킹한 `masked_name`, `company`, `job` 네 개뿐이다. Alumni ID, 원문 이름, 이메일, 휴대전화, 학번, PIN 해시, 동의값, 상담정보는 포함하지 않는다.
+
+## 사용자 매뉴얼
+
+상단 `사용자 매뉴얼` 메뉴와 모든 공개 페이지 하단에서 다음 PDF를 내려받을 수 있다.
+
+- `manuals/student-manual.pdf`: 재학생 사용자 매뉴얼
+- `manuals/alumni-manual.pdf`: 졸업생 사용자 매뉴얼
+
+원본 PDF를 그대로 배포하며 공개 URL이나 저장소에는 로컬 원본 경로를 노출하지 않는다.
