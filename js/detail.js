@@ -14,7 +14,7 @@
       const result=await AlumniAPI.request('alumniDetail',{params:{id}}),a=result.data.profile,jobs=result.data.jobs||[],news=result.data.news||[],companyUrl=webUrl(a.company_url);
       let html=`<header class="panel detail-head"><h1>${U.esc(a.name)}</h1><p>${U.esc(a.graduation_year)}년 졸업</p>${a.introduction?`<p>${U.esc(a.introduction)}</p>`:''}</header><div class="detail-grid">`;
       html+=section('취업 정보',row('현재 상태',a.employment_status)+companyRow(a.company,a.company_url)+row('직무',a.job)+row('입사연도',a.employment_year)+row('주요 업무',a.job_description)+row('주요 기술',a.skills));
-      html+=section('학사학위',row('상태',a.bachelor_status)+row('대학',a.bachelor_school)+row('전공',a.bachelor_major)+row('연도',a.bachelor_year));
+      if(a.bachelor_status&&a.bachelor_status!=='미취득')html+=section('학사학위',row('상태',a.bachelor_status)+row('대학',a.bachelor_school)+row('전공',a.bachelor_major)+row('연도',a.bachelor_year));
       if(a.graduate_status&&a.graduate_status!=='진학하지 않음')html+=section('대학원',row('상태',a.graduate_status)+row('구분',a.graduate_school_type)+row('대학원',a.graduate_school)+row('전공',a.graduate_major)+row('학위과정',a.graduate_degree)+row('입학연도',a.graduate_entry_year)+row('졸업연도',a.graduate_graduation_year)+row('연구분야',a.research_fields));
       if(a.contact_allowed)html+=section('후배 상담',row('상담 가능 분야',a.mentoring_topics)+row('후배에게 한마디',a.message_to_juniors),'detail-card--mentoring');
       html+='</div>';
