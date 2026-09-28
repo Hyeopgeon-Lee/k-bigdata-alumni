@@ -8,3 +8,8 @@
 .cards--three{grid-template-columns:1fr}
 @media(min-width:700px){.cards--three{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(min-width:1050px){.cards--three{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.share-panel{border-top:1px solid var(--line);margin-top:1.5rem;padding-top:1.25rem}
+.share-panel h2{margin:0 0 .35rem;color:var(--navy);font-size:1.15rem}
+.share-panel>p{margin:.25rem 0;color:var(--muted)}
+@media(max-width:520px){.share-panel .actions>*{width:100%}}

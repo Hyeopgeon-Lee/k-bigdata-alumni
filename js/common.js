@@ -73,7 +73,20 @@
     if (selected) Array.from(select.options).forEach(option => { option.defaultSelected = option.value === selected; });
   }
   function params() { return new URLSearchParams(location.search); }
-  window.AlumniUI = { esc, qs, qsa, status, busy, yearOptions, selectOptions, options, params };
+  async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    const area = document.createElement('textarea');
+    area.value = text; area.setAttribute('readonly', ''); area.style.position = 'fixed'; area.style.opacity = '0';
+    document.body.appendChild(area); area.select();
+    const copied = document.execCommand('copy'); area.remove();
+    if (!copied) throw new Error('내용을 복사하지 못했습니다.');
+  }
+  async function shareText({ title, text, url }) {
+    if (navigator.share) return navigator.share({ title, text, url });
+    await copyText(`${text}\n\n${url}`);
+    return 'copied';
+  }
+  window.AlumniUI = { esc, qs, qsa, status, busy, yearOptions, selectOptions, options, params, copyText, shareText };
   window.JobUI = window.JobUI || {
     dday(job) { if (job.always_open) return '상시채용'; if (!job.deadline) return '마감일 미정'; const today = new Date(); today.setHours(0,0,0,0); const days = Math.ceil((new Date(job.deadline + 'T00:00:00') - today) / 86400000); return days === 0 ? '오늘 마감' : days > 0 ? `D-${days}` : '마감'; },
     card(job) { const skills = (job.skills || []).slice(0,4).map(x => `<span class="chip">${esc(x)}</span>`).join(''); return `<article class="card job-card"><div class="job-card__flags"><span>${esc(job.recruit_type)}</span>${job.referral_available?'<strong>사내추천 가능</strong>':''}</div><h3>${esc(job.company)}</h3><p class="job-title">${esc(job.job_title)}</p><p class="meta">${esc(job.employment_type)} · ${esc(job.location||'근무지역 협의')}</p><div class="chips">${skills}</div><div class="job-card__foot"><span>${esc(this.dday(job))}</span><span>${esc(job.graduation_year)}년 졸업생 공유</span></div><a class="button" href="job-detail.html?id=${encodeURIComponent(job.job_id)}">자세히 보기</a></article>`; }
