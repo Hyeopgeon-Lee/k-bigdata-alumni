@@ -3,3 +3,8 @@
 .manual-menu{position:relative}.manual-menu__toggle{appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:.7rem .5rem}.manual-menu__toggle::after{content:' ▾';font-size:.8em}.manual-menu__panel{display:none;position:absolute;z-index:30;right:0;top:100%;min-width:230px;padding:.5rem;background:#fff;border:1px solid #d8e2ec;border-radius:12px;box-shadow:0 14px 35px rgba(15,42,67,.15)}.manual-menu.is-open .manual-menu__panel{display:grid}.manual-menu__panel a{padding:.75rem .9rem;white-space:nowrap;border-radius:8px}.manual-menu__panel a:hover{background:#eef5fb}.footer-manuals{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.75rem}.footer-manuals a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:760px){.manual-menu{width:100%}.manual-menu__toggle{width:100%;text-align:left;padding:.85rem 0}.manual-menu__panel{position:static;box-shadow:none;margin:.15rem 0 .5rem;min-width:0}.manual-menu__panel a{white-space:normal}.footer-manuals{display:grid;gap:.5rem}}
 @media(max-width:520px){.section-heading{align-items:flex-start}.section-heading>a{max-width:100%;overflow-wrap:anywhere}.field,.panel,.card{min-width:0}.footer .container{overflow-wrap:anywhere}}
+
+/* 홈의 채용정보와 동문소식은 항상 같은 카드 그리드를 사용한다. */
+.cards--three{grid-template-columns:1fr}
+@media(min-width:700px){.cards--three{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1050px){.cards--three{grid-template-columns:repeat(3,minmax(0,1fr))}}
