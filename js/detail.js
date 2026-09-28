@@ -1,8 +1,9 @@
 (function(){
   'use strict';
-  document.head.insertAdjacentHTML('beforeend','<link rel="stylesheet" href="css/detail-recovery.css">');
+  document.head.insertAdjacentHTML('beforeend','<link rel="stylesheet" href="css/detail-recovery.css?v=20260928-7">');
   const U=AlumniUI;
   const arr=v=>Array.isArray(v)?v.join(' · '):v||'';
+  const narrative=v=>String(v||'').replace(/\r\n?/g,'\n').replace(/[ \t]+\*[ \t]+/g,'\n• ').replace(/[ \t]+(\d+\.)[ \t]+(?=[가-힣A-Za-z])/g,'\n\n$1 ').replace(/[ \t]+(\d+-\d+)[ \t]+(?=['"0-9A-Za-z가-힣])/g,'\n$1 ').replace(/\n{3,}/g,'\n\n').trim();
   const row=(k,v)=>{const value=arr(v);return value?`<dt>${U.esc(k)}</dt><dd>${U.esc(value)}</dd>`:''};
   const section=(t,c,cls='')=>c?`<section class="form-section detail-card ${cls}"><h2>${U.esc(t)}</h2><dl class="detail-list">${c}</dl></section>`:'';
   function webUrl(v){try{const u=new URL(String(v||''));return['http:','https:'].includes(u.protocol)?u.href:''}catch(_){return''}}
@@ -12,11 +13,11 @@
     if(!id)return U.status(st,'잘못된 접근입니다.','error');
     try{
       const result=await AlumniAPI.request('alumniDetail',{params:{id}}),a=result.data.profile,jobs=result.data.jobs||[],news=result.data.news||[],companyUrl=webUrl(a.company_url);
-      let html=`<header class="panel detail-head"><h1>${U.esc(a.name)}</h1><p>${U.esc(a.graduation_year)}년 졸업</p>${a.introduction?`<p>${U.esc(a.introduction)}</p>`:''}</header><div class="detail-grid">`;
-      html+=section('취업 정보',row('현재 상태',a.employment_status)+companyRow(a.company,a.company_url)+row('직무',a.job)+row('입사연도',a.employment_year)+row('주요 업무',a.job_description)+row('주요 기술',a.skills));
+      let html=`<header class="panel detail-head"><h1>${U.esc(a.name)}</h1><p>${U.esc(a.graduation_year)}년 졸업</p>${a.introduction?`<p class="profile-introduction">${U.esc(narrative(a.introduction))}</p>`:''}</header><div class="detail-grid">`;
+      html+=section('취업 정보',row('현재 상태',a.employment_status)+companyRow(a.company,a.company_url)+row('직무',a.job)+row('입사연도',a.employment_year)+row('주요 업무',narrative(a.job_description))+row('주요 기술',a.skills));
       if(a.bachelor_status&&a.bachelor_status!=='미취득')html+=section('학사학위',row('상태',a.bachelor_status)+row('대학',a.bachelor_school)+row('전공',a.bachelor_major)+row('연도',a.bachelor_year));
       if(a.graduate_status&&a.graduate_status!=='진학하지 않음')html+=section('대학원',row('상태',a.graduate_status)+row('구분',a.graduate_school_type)+row('대학원',a.graduate_school)+row('전공',a.graduate_major)+row('학위과정',a.graduate_degree)+row('입학연도',a.graduate_entry_year)+row('졸업연도',a.graduate_graduation_year)+row('연구분야',a.research_fields));
-      if(a.contact_allowed)html+=section('후배 상담',row('상담 가능 분야',a.mentoring_topics)+row('후배에게 한마디',a.message_to_juniors),'detail-card--mentoring');
+      if(a.contact_allowed)html+=section('후배 상담',row('상담 가능 분야',a.mentoring_topics)+row('후배에게 한마디',narrative(a.message_to_juniors)),'detail-card--mentoring');
       html+='</div>';
       if(companyUrl||a.contact_allowed){html+='<div class="actions detail-actions">';if(companyUrl)html+=`<a class="button button--secondary" href="${U.esc(companyUrl)}" target="_blank" rel="noopener noreferrer">회사 홈페이지</a>`;if(a.contact_allowed)html+=`<a class="button" href="contact.html?id=${encodeURIComponent(a.alumni_id)}">선배에게 연락 요청하기</a>`;html+='</div>'}
       html+='<section class="section profile-jobs"><div class="section-heading"><h2 class="section-title">이 선배가 공유한 채용정보</h2><a href="jobs.html">전체 채용정보 →</a></div><div class="cards cards--three">'+(jobs.length?jobs.map(JobUI.card).join(''):'<p class="empty">현재 모집중인 공유 채용정보가 없습니다.</p>')+'</div></section>';
