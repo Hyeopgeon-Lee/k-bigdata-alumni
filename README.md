@@ -21,7 +21,7 @@ index.html              졸업생 검색/필터
 detail.html             공개 상세 정보
 contact.html            비공개 연락 요청
 alumni.html             신규 등록/본인 PIN 수정
-admin.html              승인/반려/비공개 및 요청 기록
+admin.html              승인/반려/비공개, 관리자 채용공고·동문소식 직접 등록 및 요청 기록
 css/style.css           모바일 우선 공통 디자인
 js/config.js            Apps Script URL, Google OAuth Client ID
 js/api.js               API 통신/타임아웃
@@ -111,6 +111,7 @@ PIN은 찾거나 복호화하지 않습니다. Alumni ID와 등록 이메일 확
 - 졸업생 신규 등록은 `PENDING`; 관리자가 승인해야 검색에 표시됩니다.
 - 졸업생 수정도 PIN 본인 확인 후 `PENDING`으로 돌아가 재승인을 거칩니다.
 - 관리자 페이지에서 Google 로그인 후 승인, 반려, 비공개 전환과 연락 요청 발송 상태를 확인합니다.
+- 관리자는 `admin.html`에서 승인된 졸업생을 선택해 채용공고와 동문소식을 직접 게시할 수 있습니다. 채용공고는 다음 일일 Digest 포함 여부를 선택하며, 동문소식은 게시만 또는 게시 후 수신 동의자 이메일 발송을 선택합니다.
 - `admins` 시트의 상태를 `ACTIVE`가 아닌 값으로 바꾸면 즉시 관리 권한이 중단됩니다.
 - Apps Script와 Sheets 편집 권한은 최소 인원에게만 부여합니다.
 - Apps Script 메일 일일 할당량과 `logs`의 `FAILED`를 정기 확인합니다.

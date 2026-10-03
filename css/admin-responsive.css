@@ -8,11 +8,25 @@
 .admin-badge--rejected{background:#fff0ee;color:var(--bad)}
 .admin-badge--hidden{background:#edf2f7;color:var(--muted)}
 .detail-company-link{font-weight:800;text-decoration:underline;text-underline-offset:.2em}
+.admin-create-actions{display:flex;flex-wrap:wrap;gap:.65rem;margin:1rem 0}
+.admin-create-panel{margin:1rem 0 1.25rem;border:2px solid #cbdced}
+.admin-create-panel .field--full{grid-column:1/-1}
+.admin-create-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+.admin-create-heading h2{margin:0 0 .35rem;font-size:1.3rem}
+.admin-create-heading p{margin:0;color:var(--muted)}
+.admin-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem 1rem;margin:1rem 0}
+.admin-create-panel .check{display:flex;align-items:flex-start;gap:.55rem;padding:.7rem;border:1px solid var(--line);border-radius:10px;background:#f8fbfe}
+.admin-create-panel .check input{flex:0 0 auto;margin-top:.15rem}
 
 @media (max-width:699px){
   #admin-app .tabs{display:grid;grid-template-columns:1fr 1fr}
   #admin-app .tabs button{width:100%;padding-inline:.5rem}
   #admin-app .panel{padding:.9rem}
+  .admin-create-actions{display:grid;grid-template-columns:1fr 1fr}
+  .admin-create-actions button{width:100%;padding-inline:.55rem}
+  .admin-create-heading{align-items:center}
+  .admin-create-heading p{font-size:.9rem}
+  .admin-check-grid{grid-template-columns:1fr}
   .admin-table{min-width:0}
   .admin-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
   .admin-table,.admin-table tbody,.admin-table tr,.admin-table td{display:block;width:100%}
