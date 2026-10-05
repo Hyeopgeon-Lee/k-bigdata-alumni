@@ -27,6 +27,15 @@
       const link = document.createElement('a'); link.href = 'news.html'; link.textContent = '동문소식';
       const alumniLink = nav.querySelector('a[href="alumni.html"]'); nav.insertBefore(link, alumniLink || null);
     }
+    if (nav && !nav.querySelector('[data-portal-site]')) {
+      const link = document.createElement('a');
+      link.href = 'https://portal.k-bigdata.kr/';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.dataset.portalSite = 'true';
+      link.textContent = '통합 포털 ↗';
+      nav.appendChild(link);
+    }
     if (nav && !nav.querySelector('[data-department-site]')) {
       const link = document.createElement('a');
       link.href = 'https://ai.k-bigdata.kr/';
@@ -92,7 +101,8 @@
     if (!copied) throw new Error('내용을 복사하지 못했습니다.');
   }
   async function shareText({ title, text, url }) {
-    if (navigator.share) return navigator.share({ title, text, url });
+    const data = { title, text, url };
+    if (navigator.share && (!navigator.canShare || navigator.canShare(data))) return navigator.share(data);
     await copyText(`${text}\n\n${url}`);
     return 'copied';
   }
