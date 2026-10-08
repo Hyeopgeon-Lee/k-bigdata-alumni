@@ -1,0 +1,116 @@
+name: Deploy Apps Script
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps-script/**"
+      - "js/config.js"
+      - ".github/workflows/deploy-gas.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: k-bigdata-alumni-apps-script-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}
+      GAS_DEPLOYMENT_ID: ${{ secrets.GAS_DEPLOYMENT_ID }}
+      CLASP_CREDENTIALS_JSON: ${{ secrets.CLASP_CREDENTIALS_JSON }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate Apps Script source syntax
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync('apps-script/Code.gs', 'utf8');
+          new Function(source);
+          console.log('Code.gs syntax valid');
+          NODE
+
+      - name: Validate Apps Script manifest
+        shell: bash
+        run: node -e "JSON.parse(require('fs').readFileSync('apps-script/appsscript.json','utf8')); console.log('appsscript.json valid')"
+
+      - name: Check deployment configuration
+        id: gas_config
+        shell: bash
+        run: |
+          if [[ -n "$GAS_SCRIPT_ID" && -n "$GAS_DEPLOYMENT_ID" && -n "$CLASP_CREDENTIALS_JSON" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Apps Script deployment secrets are configured."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Apps Script deployment skipped. Configure GAS_SCRIPT_ID, GAS_DEPLOYMENT_ID, and CLASP_CREDENTIALS_JSON repository secrets."
+          fi
+
+      - name: Verify frontend deployment target
+        if: steps.gas_config.outputs.ready == 'true'
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const cfg = fs.readFileSync('js/config.js', 'utf8');
+          const match = cfg.match(/script\.google\.com\/macros\/s\/([^/]+)\/exec/);
+          if (!match) throw new Error('Could not find Apps Script deployment ID in js/config.js');
+          const expected = process.env.GAS_DEPLOYMENT_ID;
+          if (match[1] !== expected) {
+            throw new Error('GAS_DEPLOYMENT_ID does not match js/config.js');
+          }
+          console.log('Frontend deployment target matches GAS_DEPLOYMENT_ID');
+          NODE
+
+      - name: Install clasp
+        if: steps.gas_config.outputs.ready == 'true'
+        run: npm install --global @google/clasp@3.4.1
+
+      - name: Prepare clasp configuration
+        if: steps.gas_config.outputs.ready == 'true'
+        shell: bash
+        run: |
+          cat > .clasp.ci.json <<EOF
+          {
+            "scriptId": "$GAS_SCRIPT_ID",
+            "rootDir": "apps-script"
+          }
+          EOF
+          printf '%s' "$CLASP_CREDENTIALS_JSON" > .clasprc.ci.json
+          chmod 600 .clasprc.ci.json
+
+      - name: Verify clasp authentication
+        if: steps.gas_config.outputs.ready == 'true'
+        run: clasp --project .clasp.ci.json --auth .clasprc.ci.json show-authorized-user
+
+      - name: Push source to Apps Script
+        if: steps.gas_config.outputs.ready == 'true'
+        run: clasp --project .clasp.ci.json --auth .clasprc.ci.json push --force
+
+      - name: Redeploy existing Web App
+        if: steps.gas_config.outputs.ready == 'true'
+        shell: bash
+        run: |
+          clasp --project .clasp.ci.json --auth .clasprc.ci.json create-deployment \
+            --deploymentId "$GAS_DEPLOYMENT_ID" \
+            --description "GitHub Actions ${GITHUB_SHA::7}"
+
+      - name: Remove temporary credentials
+        if: always()
+        shell: bash
+        run: rm -f .clasp.ci.json .clasprc.ci.json
