@@ -72,6 +72,12 @@ CNAME
 6. `js/config.js`의 `API_URL`과 `GOOGLE_CLIENT_ID`를 각각 배포 URL과 OAuth Client ID로 바꿉니다.
 7. Apps Script 코드를 바꿀 때는 반드시 새 버전으로 웹 앱 배포를 업데이트합니다.
 
+## Apps Script 자동배포
+
+GitHub의 `apps-script/`를 Apps Script 원본 소스로 사용하며, 관련 변경이 `main`에 반영되면 GitHub Actions가 문법·manifest·운영 Deployment ID를 확인한 뒤 clasp로 기존 Web App 배포를 갱신할 수 있습니다.
+
+최초 1회 GitHub Actions Secret 3개 설정이 필요합니다. 자세한 절차는 [GAS_AUTO_DEPLOY](docs/GAS_AUTO_DEPLOY.md)를 참고합니다.
+
 ## GitHub Pages와 Custom Domain
 
 ## Alumni ID 찾기와 PIN 재설정
