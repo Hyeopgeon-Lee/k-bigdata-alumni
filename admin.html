@@ -6,16 +6,30 @@
   <meta name="robots" content="noindex,nofollow">
   <title>관리자 | BigData Alumni Network</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml"><meta name="theme-color" content="#0b1739"><link rel="stylesheet" href="css/style.css?v=20261005-portal-2">
-  <link rel="stylesheet" href="css/admin-responsive.css?v=20261003">
+  <link rel="stylesheet" href="css/admin-responsive.css?v=20261022-password-1">
   <link rel="stylesheet" href="css/news.css">
 </head>
 <body>
 <header class="site-header"><div class="header-inner"><a class="brand portal-brand" href="index.html" aria-label="졸업생 네트워크 홈"><span class="brand-mark" aria-hidden="true"><span></span></span><span class="brand-copy"><strong>빅데이터소프트웨어공학과</strong><small>졸업생 네트워크 · 관리자</small></span></a></div></header>
 <main class="section"><div class="container">
   <h1 class="section-title">관리자</h1>
-  <div id="admin-login" class="panel"><p>등록된 관리자 Google 계정으로 로그인하세요. 권한은 서버에서 매 요청마다 검증됩니다.</p><div id="google-signin"></div><details><summary>로그인 문제 해결</summary><div class="field"><label for="admin-token">Google ID 토큰 직접 입력</label><input id="admin-token" type="password" autocomplete="off"></div><button id="admin-load" type="button">관리 데이터 불러오기</button></details></div>
+  <div id="admin-login" class="panel">
+    <h2>관리자 로그인</h2>
+    <form id="admin-password-form" autocomplete="on">
+      <div class="form-grid">
+        <div class="field"><label for="admin-username">관리자 아이디</label><input id="admin-username" name="adminUsername" type="text" placeholder="아이디" autocomplete="username" autocapitalize="off" spellcheck="false" required></div>
+        <div class="field"><label for="admin-password">비밀번호</label><input id="admin-password" name="adminPassword" type="password" placeholder="비밀번호" autocomplete="current-password" required></div>
+      </div>
+      <div class="actions"><button id="admin-password-submit" type="submit">로그인</button></div>
+    </form>
+    <details class="admin-alternative-login"><summary>Google 계정으로 로그인</summary>
+      <p>기존에 등록된 관리자 Google 계정으로도 로그인할 수 있습니다.</p>
+      <div id="google-signin"></div>
+      <details><summary>Google 로그인 문제 해결</summary><div class="field"><label for="admin-token">Google ID 토큰 직접 입력</label><input id="admin-token" type="password" autocomplete="off"></div><button id="admin-load" type="button">관리 데이터 불러오기</button></details>
+    </details>
+  </div>
   <div id="admin-status" class="status" hidden></div>
-  <div id="admin-app" hidden>
+  <div id="admin-app" hidden><div class="actions" style="justify-content:flex-end"><button type="button" id="admin-logout" class="button--secondary">로그아웃</button></div>
     <div class="tabs admin-tabs"><button data-view="alumni" aria-selected="true">졸업생 관리</button><button data-view="jobs" aria-selected="false">채용정보 관리</button><button data-view="news" aria-selected="false">동문소식 관리</button><button data-view="requests" aria-selected="false">연락 요청</button><button data-view="mail_logs" aria-selected="false">메일 발송 기록</button></div>
     <div class="admin-create-actions" aria-label="관리자 직접 등록"><button id="show-admin-job-form" type="button">채용공고 직접 등록</button><button id="show-admin-news-form" class="button--secondary" type="button">동문소식 직접 등록</button></div>
     <section id="admin-job-create" class="panel admin-create-panel" hidden>
@@ -44,5 +58,5 @@
     <div id="admin-table" class="table-wrap"></div>
   </div>
 </div></main>
-<script src="https://accounts.google.com/gsi/client" async defer></script><script src="js/config.js"></script><script src="js/api.js"></script><script src="js/common.js?v=20261005-portal-2"></script><script src="js/admin.js?v=20261003"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script><script src="js/config.js"></script><script src="js/api.js"></script><script src="js/common.js?v=20261005-portal-2"></script><script src="js/admin.js?v=20261022-password-1"></script>
 </body></html>
