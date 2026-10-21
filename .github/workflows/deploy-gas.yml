@@ -7,6 +7,9 @@ on:
     paths:
       - "apps-script/**"
       - "js/config.js"
+      - "tests/**"
+      - "js/admin.js"
+      - "admin.html"
       - ".github/workflows/deploy-gas.yml"
   workflow_dispatch:
 
@@ -44,6 +47,9 @@ jobs:
           new Function(source);
           console.log('Code.gs syntax valid');
           NODE
+
+      - name: Verify administrator password sessions and Google fallback
+        run: node --test tests/admin-auth.test.mjs
 
       - name: Validate Apps Script manifest
         shell: bash
