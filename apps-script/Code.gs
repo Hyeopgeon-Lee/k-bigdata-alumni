@@ -23,7 +23,7 @@ let DB_CACHE_=null,ROWS_CACHE_={};
 function doGet(e){const p=e.parameter||{},action=String(p.action||'');try{if(action==='approveByEmail')return approveByEmail_(p.token);if(action==='moderateJob')return moderateJobByEmail_(p.token);if(action==='moderateNews')return moderateNewsByEmail_(p.token);return respond_(routeGet_(action,p));}catch(err){log_('get','FAILED','',err.message);if(['approveByEmail','moderateJob','moderateNews'].includes(action))return approvalPage_('처리 실패',safeError_(err),false);return respond_({success:false,message:safeError_(err)});}}
 function doPost(e){let body={};try{body=JSON.parse((e.postData&&e.postData.contents)||'{}');return respond_(routePost_(String(body.action||''),body));}catch(err){log_('post','FAILED','',err.message);return respond_({success:false,message:safeError_(err)});}}
 function routeGet_(action,p){if(action==='home')return {success:true,data:homePublic_()};if(action==='alumniDetail')return {success:true,data:alumniDetailPublic_(p.id)};if(action==='careerPublic')return {success:true,data:careerPublic_()};if(action==='list')return {success:true,data:listPublic_()};if(action==='detail')return {success:true,data:detailPublic_(p.id)};if(action==='jobs')return {success:true,data:listJobsPublic_()};if(action==='jobDetail')return {success:true,data:jobDetailPublic_(p.id)};if(action==='alumniJobs')return {success:true,data:alumniJobsPublic_(p.id)};if(action==='newsList')return {success:true,data:listNewsPublic_()};if(action==='newsDetail')return {success:true,data:newsDetailPublic_(p.id)};if(action==='alumniNews')return {success:true,data:alumniNewsPublic_(p.id)};throw new Error('지원하지 않는 요청입니다.');}
-function routePost_(action,b){if(action==='register')return register_(b);if(action==='getOwn')return getOwn_(b);if(action==='update')return update_(b);if(action==='findAlumniId')return findAlumniId_(b);if(action==='requestPinReset')return requestPinReset_(b);if(action==='resetPin')return resetPin_(b);if(action==='contact')return contact_(b);if(action==='verifyJobAlumni')return verifyJobAlumni_(b);if(action==='submitJob')return submitJob_(b);if(action==='verifyNewsAlumni')return verifyNewsAlumni_(b);if(action==='submitNews')return submitNews_(b);if(action==='newsAlumniSearch')return newsAlumniSearch_(b);if(action==='adminList')return adminList_(b);if(['adminApprove','adminReject','adminHide'].indexOf(action)>=0)return adminStatus_(action,b);if(['adminJobApprove','adminJobReject','adminJobHide','adminJobPublish'].includes(action))return adminJobStatus_(action,b);if(['adminNewsApproveAndMail','adminNewsApprove','adminNewsReject','adminNewsHide','adminNewsPublish'].includes(action))return adminNewsStatus_(action,b);if(action==='adminCreateJob')return adminCreateJob_(b);if(action==='adminCreateNews')return adminCreateNews_(b);if(action==='adminSendCareerConsentInvites')return adminSendCareerConsentInvites_(b);if(action==='adminSendNewsConsentInvites')return adminSendNewsConsentInvites_(b);if(action==='adminRunJobDigest')return adminRunJobDigest_(b);throw new Error('지원하지 않는 요청입니다.');}
+function routePost_(action,b){if(action==='adminLogin')return adminPasswordLogin_(b);if(action==='adminLogout')return adminSessionLogout_(b);if(action==='register')return register_(b);if(action==='getOwn')return getOwn_(b);if(action==='update')return update_(b);if(action==='findAlumniId')return findAlumniId_(b);if(action==='requestPinReset')return requestPinReset_(b);if(action==='resetPin')return resetPin_(b);if(action==='contact')return contact_(b);if(action==='verifyJobAlumni')return verifyJobAlumni_(b);if(action==='submitJob')return submitJob_(b);if(action==='verifyNewsAlumni')return verifyNewsAlumni_(b);if(action==='submitNews')return submitNews_(b);if(action==='newsAlumniSearch')return newsAlumniSearch_(b);if(action==='adminList')return adminList_(b);if(['adminApprove','adminReject','adminHide'].indexOf(action)>=0)return adminStatus_(action,b);if(['adminJobApprove','adminJobReject','adminJobHide','adminJobPublish'].includes(action))return adminJobStatus_(action,b);if(['adminNewsApproveAndMail','adminNewsApprove','adminNewsReject','adminNewsHide','adminNewsPublish'].includes(action))return adminNewsStatus_(action,b);if(action==='adminCreateJob')return adminCreateJob_(b);if(action==='adminCreateNews')return adminCreateNews_(b);if(action==='adminSendCareerConsentInvites')return adminSendCareerConsentInvites_(b);if(action==='adminSendNewsConsentInvites')return adminSendNewsConsentInvites_(b);if(action==='adminRunJobDigest')return adminRunJobDigest_(b);throw new Error('지원하지 않는 요청입니다.');}
 function respond_(obj){return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);}
 function safeError_(e){const allowed=['지원하지','찾을 수','입력','형식','필수','PIN','Alumni','권한','요청','허용','중복','길이','동의','설정','승인','채용정보','URL','마감일','만료','인증'];return allowed.some(x=>String(e.message).includes(x))?e.message:'처리 중 오류가 발생했습니다.';}
 
@@ -107,7 +107,69 @@ function sendDailyJobDigest(){expireJobs_();const jobs=rows_(SHEETS.JOBS,JOB_HEA
 function markJobsMailed_(jobs,stamp){jobs.forEach(j=>{j.last_mailed_at=stamp;j.updated_at=stamp;const row=j.__row;delete j.__row;updateRow_(SHEETS.JOBS,JOB_HEADERS,row,j);});}
 function jobDigestHtml_(jobs){const e=html_,base=siteUrl_();return `<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#243b53"><div style="background:#0b4f7a;color:#fff;padding:24px;border-radius:14px 14px 0 0"><b>BigData Alumni Network</b><h2 style="margin:8px 0 0">오늘의 채용정보</h2><p style="margin-bottom:0">선배들이 공유한 새로운 채용정보를 확인하세요.</p></div><div style="padding:18px;background:#f3f7fa">${jobs.map(j=>{const a=findAlumni_(j.alumni_id)||{},url=base+'/job-detail.html?id='+encodeURIComponent(j.job_id);return `<div style="background:#fff;border:1px solid #d9e2ec;border-radius:12px;padding:20px;margin-bottom:14px"><div style="font-size:13px;color:#486581">${e(j.recruit_type)} · ${e(j.employment_type)} · ${e(j.location||'근무지역 협의')}</div><h3 style="margin:8px 0 4px;color:#102a43">${e(j.company)}</h3><p style="font-size:17px;font-weight:bold;margin:0 0 12px">${e(j.job_title)}</p><p style="margin:6px 0">${j.always_open?'상시채용':'마감 '+e(dateOnly_(j.deadline))}</p><p style="margin:6px 0;color:#486581">${e(String(j.skills||'').split('|').join(' · ')||'기술 정보 없음')}</p><p style="margin:6px 0">${e(a.graduation_year)}년 졸업생 공유${bool_(j.referral_available)?' · <b style="color:#1477b8">사내추천 가능</b>':''}</p><a href="${e(url)}" style="display:inline-block;margin-top:10px;background:#1477b8;color:#fff;text-decoration:none;font-weight:bold;padding:12px 18px;border-radius:8px">채용정보 자세히 보기</a></div>`;}).join('')}<div style="text-align:center;padding:10px"><a href="${e(base+'/jobs.html')}" style="display:inline-block;border:1px solid #1477b8;color:#1477b8;text-decoration:none;font-weight:bold;padding:13px 20px;border-radius:8px">전체 채용정보 보기</a></div></div></div>`;}
 function installDailyJobDigestTrigger(){const exists=ScriptApp.getProjectTriggers().some(t=>t.getHandlerFunction()==='sendDailyJobDigest');if(!exists)ScriptApp.newTrigger('sendDailyJobDigest').timeBased().atHour(8).everyDays(1).inTimezone('Asia/Seoul').create();return exists?'기존 트리거가 이미 있습니다.':'매일 오전 8시 채용정보 메일 트리거를 생성했습니다.';}
-function verifyAdmin_(token){if(!token)throw new Error('관리자 권한이 필요합니다.');const client=PropertiesService.getScriptProperties().getProperty('GOOGLE_CLIENT_ID');if(!client)throw new Error('관리자 인증 설정이 필요합니다.');let info;try{const res=UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token='+encodeURIComponent(token),{muteHttpExceptions:true});info=JSON.parse(res.getContentText());}catch(e){throw new Error('관리자 인증에 실패했습니다.');}if(info.aud!==client||!['accounts.google.com','https://accounts.google.com'].includes(info.iss)||info.email_verified!=='true')throw new Error('관리자 권한이 없습니다.');const ok=rows_(SHEETS.ADMINS,ADMIN_HEADERS).some(x=>String(x.email).toLowerCase()===String(info.email).toLowerCase()&&x.status==='ACTIVE');if(!ok)throw new Error('관리자 권한이 없습니다.');return info.email;}
+
+const ADMIN_ACCOUNT_NAME_='poly';
+const ADMIN_SESSION_SECONDS_=21600;
+const ADMIN_MAX_FAILURES_=5;
+const ADMIN_FAILURE_WINDOW_SECONDS_=900;
+
+function adminPasswordDigest_(password,salt,pepper){
+  const bytes=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(salt)+':'+String(password)+':'+String(pepper),Utilities.Charset.UTF_8);
+  return bytes.map(x=>((x+256)%256).toString(16).padStart(2,'0')).join('');
+}
+function adminSecureEqual_(left,right){
+  left=String(left||'');right=String(right||'');
+  let diff=left.length^right.length;
+  const size=Math.max(left.length,right.length);
+  for(let i=0;i<size;i++)diff|=(left.charCodeAt(i%Math.max(1,left.length))||0)^(right.charCodeAt(i%Math.max(1,right.length))||0);
+  return diff===0;
+}
+function adminPasswordLogin_(body){
+  const username=String(body.adminUsername||'').trim();
+  const password=String(body.adminPassword||'');
+  const lock=LockService.getScriptLock();
+  lock.waitLock(15000);
+  try{
+    const cache=CacheService.getScriptCache();
+    const failureKey='ALUMNI_ADMIN_LOGIN_FAILURES';
+    const failures=Number(cache.get(failureKey)||'0');
+    if(failures>=ADMIN_MAX_FAILURES_)throw new Error('로그인 실패 횟수가 초과되었습니다. 15분 후 다시 시도해 주세요.');
+    const props=PropertiesService.getScriptProperties();
+    const bootstrap=String(props.getProperty('ADMIN_LOGIN_PASSWORD')||'');
+    const storedHash=String(props.getProperty('ADMIN_PASSWORD_HASH')||'');
+    const salt=String(props.getProperty('ADMIN_PASSWORD_SALT')||'');
+    const pepper=String(props.getProperty('ADMIN_PASSWORD_PEPPER')||'');
+    const validStored=Boolean(storedHash&&salt&&pepper&&adminSecureEqual_(adminPasswordDigest_(password,salt,pepper),storedHash));
+    const validBootstrap=Boolean(!storedHash&&bootstrap&&adminSecureEqual_(password,bootstrap));
+    if(!adminSecureEqual_(username,ADMIN_ACCOUNT_NAME_)||(!validStored&&!validBootstrap)){
+      cache.put(failureKey,String(failures+1),ADMIN_FAILURE_WINDOW_SECONDS_);
+      throw new Error('관리자 아이디 또는 비밀번호가 올바르지 않거나 서버 설정이 완료되지 않았습니다.');
+    }
+    if(validBootstrap){
+      const newSalt=Utilities.getUuid()+Utilities.getUuid();
+      const newPepper=Utilities.getUuid()+Utilities.getUuid();
+      props.setProperties({
+        ADMIN_PASSWORD_SALT:newSalt,
+        ADMIN_PASSWORD_PEPPER:newPepper,
+        ADMIN_PASSWORD_HASH:adminPasswordDigest_(password,newSalt,newPepper)
+      });
+      props.deleteProperty('ADMIN_LOGIN_PASSWORD');
+    }
+    cache.remove(failureKey);
+    const session='ALM_'+(Utilities.getUuid()+Utilities.getUuid()).replace(/-/g,'').toLowerCase();
+    cache.put('ALUMNI_ADMIN_SESSION_'+session,ADMIN_ACCOUNT_NAME_,ADMIN_SESSION_SECONDS_);
+    return {success:true,data:{adminSessionToken:session,expiresInSeconds:ADMIN_SESSION_SECONDS_}};
+  }finally{lock.releaseLock();}
+}
+function adminSessionLogout_(body){
+  const token=String(body.admin_token||'');
+  if(/^ALM_[0-9a-f]{64}$/.test(token)){
+    CacheService.getScriptCache().remove('ALUMNI_ADMIN_SESSION_'+token);
+  }
+  return {success:true,data:{loggedOut:true}};
+}
+
+function verifyAdmin_(token){if(!token)throw new Error('관리자 권한이 필요합니다.');if(/^ALM_[0-9a-f]{64}$/.test(String(token))){const session=CacheService.getScriptCache().get('ALUMNI_ADMIN_SESSION_'+token);if(session==='poly')return 'poly';throw new Error('관리자 세션이 만료되었습니다. 다시 로그인해 주세요.');}const client=PropertiesService.getScriptProperties().getProperty('GOOGLE_CLIENT_ID');if(!client)throw new Error('관리자 인증 설정이 필요합니다.');let info;try{const res=UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token='+encodeURIComponent(token),{muteHttpExceptions:true});info=JSON.parse(res.getContentText());}catch(e){throw new Error('관리자 인증에 실패했습니다.');}if(info.aud!==client||!['accounts.google.com','https://accounts.google.com'].includes(info.iss)||info.email_verified!=='true')throw new Error('관리자 권한이 없습니다.');const ok=rows_(SHEETS.ADMINS,ADMIN_HEADERS).some(x=>String(x.email).toLowerCase()===String(info.email).toLowerCase()&&x.status==='ACTIVE');if(!ok)throw new Error('관리자 권한이 없습니다.');return info.email;}
 
 function approvalSecret_(){const props=PropertiesService.getScriptProperties();let secret=props.getProperty('APPROVAL_TOKEN_SECRET');if(!secret){const lock=LockService.getScriptLock();lock.waitLock(10000);try{secret=props.getProperty('APPROVAL_TOKEN_SECRET');if(!secret){secret=Utilities.getUuid()+Utilities.getUuid();props.setProperty('APPROVAL_TOKEN_SECRET',secret);}}finally{lock.releaseLock();}}return secret;}
 function approvalToken_(id){const payload=id+'|'+(Date.now()+7*24*60*60*1000),sig=Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(payload,approvalSecret_())).replace(/=+$/,'');return Utilities.base64EncodeWebSafe(payload).replace(/=+$/,'')+'.'+sig;}
