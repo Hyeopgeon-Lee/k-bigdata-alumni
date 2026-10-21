@@ -12,7 +12,7 @@
 
 브라우저는 Apps Script에 공개 프로필 또는 `alumni_id`만 요청합니다. `list`와 `detail`은 명시된 공개 필드만 반환하며 이메일, 휴대전화, PIN 해시는 반환하지 않습니다. 연락 요청에서는 Apps Script가 시트에서 대상 이메일을 내부 조회하여 HTML 메일을 발송합니다. 신규 등록과 수정은 `PENDING`이 되고 승인 후 공개됩니다.
 
-PIN은 Script Property의 무작위 `PIN_PEPPER`와 alumni ID를 사용한 HMAC-SHA256 결과만 저장됩니다. 관리자 작업은 Google ID 토큰의 서명 정보·issuer·audience·이메일 확인 여부를 검증하고 `admins` 시트의 `ACTIVE` 계정을 다시 확인합니다.
+PIN은 Script Property의 무작위 `PIN_PEPPER`와 alumni ID를 사용한 HMAC-SHA256 결과만 저장됩니다. 관리자 작업은 기존 Google ID 토큰(issuer·audience·이메일 검증 및 `admins` 시트 권한 확인) 또는 새 서버 발급 관리자 세션으로 인증합니다. 관리 계정 아이디는 `poly`이며 비밀번호는 GitHub가 아닌 Apps Script 비공개 속성에서 관리합니다.
 
 ## 파일 구조
 
@@ -30,7 +30,7 @@ js/app.js               검색·필터·카드
 js/detail.js            상세 표시
 js/contact.js           연락 요청
 js/alumni.js            조건부 등록·수정 폼
-js/admin.js             Google 로그인·관리 기능
+js/admin.js             관리자 아이디·비밀번호 로그인, Google 로그인·관리 기능
 apps-script/Code.gs     Apps Script 백엔드
 apps-script/appsscript.json
 CNAME
@@ -71,6 +71,21 @@ CNAME
 5. `/exec`로 끝나는 배포 URL을 복사합니다.
 6. `js/config.js`의 `API_URL`과 `GOOGLE_CLIENT_ID`를 각각 배포 URL과 OAuth Client ID로 바꿉니다.
 7. Apps Script 코드를 바꿀 때는 반드시 새 버전으로 웹 앱 배포를 업데이트합니다.
+
+## 관리자 아이디·비밀번호 최초 활성화
+
+관리자 페이지: <https://alumni.k-bigdata.kr/admin.html>
+
+- 아이디: `poly`
+- 비밀번호: 운영 Apps Script의 **프로젝트 설정 → 스크립트 속성**에 최초 1회 `ADMIN_LOGIN_PASSWORD`라는 이름으로 설정합니다.
+- 서버 변경과 GitHub Pages 배포는 별개입니다. 관리자 아이디를 소스에 명시할 수 있지만, **비밀번호를 공개 저장소에 넣으면 안 됩니다.**
+- Apps Script 백엔드 새 버전 배포가 끝난 뒤 처음 로그인하면 무작위 salt와 pepper를 사용한 해시를 저장하고, 평문 `ADMIN_LOGIN_PASSWORD` 속성을 자동 삭제합니다.
+- 다음 로그인부터는 `ADMIN_PASSWORD_HASH`, `ADMIN_PASSWORD_SALT`, `ADMIN_PASSWORD_PEPPER`가 사용됩니다.
+- 비밀번호를 교체하려면 위 해시·salt·pepper 속성을 삭제하고 새 `ADMIN_LOGIN_PASSWORD`를 넣은 뒤 최초 로그인을 다시 수행합니다. 기존에 발급된 세션은 만료 전까지 유효할 수 있습니다.
+- 세션 만료는 6시간이고 로그아웃하면 세션이 즉시 무효화됩니다. 로그인 실패 5회 누적 시 15분 동안 시도를 막습니다.
+- **4자리 숫자 비밀번호는 관리자 계정 보호에 취약합니다.** 동문 개인정보가 포함되므로 길고 고유한 비밀번호 또는 기존 Google 로그인을 권장합니다.
+- 기존 `GOOGLE_CLIENT_ID` 및 `admins` 시트는 변경하지 않았으며 Google 로그인을 계속 사용할 수 있습니다.
+- 비밀번호와 관리자 세션 토큰은 URL query string에 포함하지 않고 POST 본문으로만 전송합니다.
 
 ## Apps Script 자동배포
 
@@ -116,9 +131,9 @@ PIN은 찾거나 복호화하지 않습니다. Alumni ID와 등록 이메일 확
 
 - 졸업생 신규 등록은 `PENDING`; 관리자가 승인해야 검색에 표시됩니다.
 - 졸업생 수정도 PIN 본인 확인 후 `PENDING`으로 돌아가 재승인을 거칩니다.
-- 관리자 페이지에서 Google 로그인 후 승인, 반려, 비공개 전환과 연락 요청 발송 상태를 확인합니다.
+- 관리자 페이지에서 아이디·비밀번호 또는 기존 Google 계정으로 로그인 후 승인, 반려, 비공개 전환과 연락 요청 발송 상태를 확인합니다.
 - 관리자는 `admin.html`에서 승인된 졸업생을 선택해 채용공고와 동문소식을 직접 게시할 수 있습니다. 채용공고는 다음 일일 Digest 포함 여부를 선택하며, 동문소식은 게시만 또는 게시 후 수신 동의자 이메일 발송을 선택합니다.
-- `admins` 시트의 상태를 `ACTIVE`가 아닌 값으로 바꾸면 즉시 관리 권한이 중단됩니다.
+- `admins` 시트의 `ACTIVE` 검증은 Google 계정 인증에 계속 적용됩니다. 별도 `poly` 계정은 비공개 Script Properties 비밀번호 검증으로 독립적인 관리 세션을 발급받습니다.
 - Apps Script와 Sheets 편집 권한은 최소 인원에게만 부여합니다.
 - Apps Script 메일 일일 할당량과 `logs`의 `FAILED`를 정기 확인합니다.
 
@@ -133,7 +148,7 @@ PIN은 찾거나 복호화하지 않습니다. Alumni ID와 등록 이메일 확
 - 연락 요청이 `alumni_id`만 대상으로 보내며 공개 선택한 요청자 연락처만 메일에 포함
 - 30분 중복 제한, 버튼 잠금, 서버 길이·형식 검증, 실패 로그
 - 미승인/반려/비공개 상세 조회 차단
-- 비관리자 토큰으로 관리자 작업 거부
+- 비관리자 토큰·만료된 세션으로 관리자 작업 거부
 - 브라우저 콘솔 오류 없음, HTTPS/Custom Domain 정상
 
 > 실제 개인정보나 운영 PIN, API 응답 덤프를 GitHub 이슈·커밋·README에 추가하지 마세요.
